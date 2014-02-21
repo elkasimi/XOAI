@@ -1,0 +1,184 @@
+<html>
+<head>
+<style>
+	body{
+	background: #1F1F1F;
+	color:#fff;
+	font-family: sans-serif;
+	}
+	.vtable{
+	float:left;
+	margin-left:10px;
+	}
+	table{
+	border: 1px black solid;
+	border-collapse: collapse;
+	}
+	tr {
+	border: black solid 1px;
+	}
+	td {
+	border: black solid 1px;
+	width: 100px;
+	height: 100px;
+	}
+	.log{
+	float: left;
+	width: 100%;
+	}
+	.bloc2{
+	float: right;
+	width: 249px;
+	border: 1px white dashed;
+	border-radius: 6px;
+	padding: 28px;
+	}
+	.btn{
+	width: 190px;
+	height: 36px;
+	background: white;
+	border: 3px rgb(133, 137, 203) solid;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 18px;
+	}
+
+	.btn:hover{
+	background: white;
+	border: 2px #fff solid;
+	}
+	.draw{
+	color: rgb(217, 241, 40);
+	}
+	.lose{
+	color:red;
+	}
+	.win{
+	color:green;
+	}
+</style>
+
+<script type="text/javascript" src="Position.js"></script>
+<script type="text/javascript" src="AlphaBeta.js"></script>
+<script type="text/javascript" src="MCTS.js"></script>
+<script type="text/javascript">
+
+var position = null;
+var human = 'X';
+var algorithm = 'AlphaBeta';
+
+function Init() {
+	position = new Position();
+	FIELDS.forEach(function(f) {
+		document.getElementById(f).style.backgroundImage = "url('E.png')";
+	});
+	document.getElementById("result").innerHTML = "<h2>No player win</h2>";
+	if(human == 'O') {
+		var bestMove = GetBestMove();
+		PlayAt(bestMove);
+	}
+}
+
+function PlayAt(f) {
+	if(position.IsEmpty(f) && !position.IsEndGame()) {
+		document.getElementById(f).style.backgroundImage = "url('" + position.turn + ".png')";
+		position.DoMove(f);
+		if(position.IsEndGame()) {
+			var res;
+			if(position.winner == 'E')
+				res = '<h2 class="draw">draw!</h2>';
+			else if(position.winner == human)
+				res = '<h2 class="win">You win!</h2>';
+			else
+				res = '<h2 class="lose">You lose!</h2>';
+
+			document.getElementById("result").innerHTML = res;
+		} else if(position.turn != human) {
+			var bestMove = GetBestMove(position);
+			PlayAt(bestMove);
+		}
+	}
+}
+
+function UpdateHuman() {
+	var a = document.getElementsByName('player');
+	if(a[0].checked)
+		human = 'X';
+	else
+		human = 'O';
+
+	Init();
+}
+
+function UpdateAlgorithm() {
+	var a = document.getElementsByName('algorithm');
+	if(a[0].checked)
+		algorithm = 'AlphaBeta';
+	else
+		algorithm = 'MCTS';
+
+	alert('algorithm = ' + algorithm);
+}
+
+function SetAILog(msg) {
+	var x = document.getElementById('AI_Log');
+	x.value = msg;
+}
+
+function GetBestMove() {
+	var res, bestMove, bestValue, bestVisits, msg, startTime, deltaTime;
+	startTime = new Date().getTime();
+	if(algorithm == 'AlphaBeta') {
+		res = AlphaBeta(position, 5, -OO, +OO, true);
+		bestMove = res[0];
+		bestValue = res[1];
+		msg = 'move = ' + bestMove + '\nnodes = ' + nodes + '\nvalue = ' + bestValue;
+	} else {
+		res = MCTS(position);
+		bestMove = res[0];
+		bestValue = res[1];
+		bestVisits = res[2];
+		msg = 'move = ' + bestMove + '\nvalue = ' + Math.round(100 * bestValue) + '%\nvisits = ' + bestVisits;
+	}
+
+	deltaTime = new Date().getTime() - startTime;
+	msg += '\nexecution time = ' + deltaTime + ' Milliseconds.';
+
+	SetAILog(msg);
+	return bestMove;
+}
+
+</script>
+</head>
+<body onload="Init()">
+<div align="center" style="width: 950px;margin: 0 auto;">
+	<h1 style="font-family: sans-serif;font-size: 54px;font-weight: normal;margin-top: 29px;">Play against AI</h1>
+	<div class="vtable">
+	<table style="width: 400px;height: 400px;">
+		<tr><td id="11" onclick="PlayAt(this.id)"></td><td id="12" onclick="PlayAt(this.id)"></td><td id="13" onclick="PlayAt(this.id)"></td></tr>
+		<tr><td id="21" onclick="PlayAt(this.id)"></td><td id="22" onclick="PlayAt(this.id)"></td><td id="23" onclick="PlayAt(this.id)"></td></tr>
+		<tr><td id="31" onclick="PlayAt(this.id)"></td><td id="32" onclick="PlayAt(this.id)"></td><td id="33" onclick="PlayAt(this.id)"></td></tr>
+	</table>
+	</div>
+	<div class="bloc2">
+	<div id="result"></div>
+	<input class="btn" type="submit" value="NewGame" onclick="Init()"/>
+
+	<h2>Choose algorithm:</h2>
+	<form action="">
+	<input type="radio" name="algorithm" value="alpha-beta" checked="true" onclick="UpdateAlgorithm()">ALPHA-BETA<br>
+	<input type="radio" name="algorithm" value="MCTS" onclick="UpdateAlgorithm()">MCTS<br>
+	</form>
+	<h2>Play as:</h2>
+	<form action="">
+	<input type="radio" name="player" value="X" checked="true" onclick="UpdateHuman()">X<br>
+	<input type="radio" name="player" value="O" onclick="UpdateHuman()">O<br>
+	</form>
+	</div>
+	<div class="log">
+	<h2>AI log:</h2>
+	<textarea style="font-size: 18px;font-weight: bold;" cols="40" rows="10" id="AI_Log"></textarea>
+	</div>
+</div>
+</body>
+</html>
